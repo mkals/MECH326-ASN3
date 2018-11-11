@@ -1,7 +1,32 @@
-function safetyFactor = fatigueAnalysis(r,d,D)
+function safetyFactor = fatigueAnalysis(r,d,D,Ma,Tm)
 % Assume that the critical point in the shaft has been determined.
-% r = fillet radius, d = smaller diameter, D = larger diameter
+% r = fillet radius, d = smaller diameter, D = larger diameter (all in mm)
+% Ma = alternating moment, Tm = midrange torque
 safetyFactor = 0;
+
+% 1020 Cold Drawn Carbon Steel
+% https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
+Sut = 460e6; %Pa (67e3 psi)
+Sy = 380e6; %Pa (55e3 psi)
+Se_prime = 250e6; %Pa (36e3 psi)
+
+% Marin Factors
+ka = (4.51)*Sut^(-0.265); %Surface factor for cold drawn Steel
+if (d >= 2.79 && d <= 51) %Size factor
+    kb = (1.24)*d^(-0/107);
+elseif (d > 51 && d <= 254)
+    kb = (1.51)*d^(-0.157);
+end
+kc = 1; %Loading factor for bending
+kd = 1; %Temperature factor
+ke = 1; %Reliability factor, assume perfect reliability
+kf = 1; %Miscellaneous effects factor
+
+Se = ka*kb*kc*kd*ke*kf*Se_prime;
+
+% Notch Sensitivity
+sqrta = 0.246-3.08e-3*Sut+1.51e-5*Sut^2-2.67e-8*Sut^3; %Equation 6-35a
+q = 1/(1+sqrta/sqrt(D-d)); %Equation 6-34 can be used for shear
 
 % Stress concentration factors for the shoulder in question.
 % www.amesweb.info/StressConcentrationFactor/SteppedShaftWithShoulderFillet.aspx
@@ -27,6 +52,9 @@ C8 = -1.061+0.171*sqrt(h)+0.086*h;
 
 Kt = C1+C2*(2*(D-d)/D)+C3*(2*(D-d)/D)^2+C4*(2*(D-d)/D)^3;
 Kts = C5+C6*(2*(D-d)/D)+C7*(2*(D-d)/D)^2+C8*(2*(D-d)/D)^3;
+
+Kf = 1+q*(Kt-1);
+Kfs = 1+q*(Kts-1);
 
 % End-mill keyseat Kt and Kts for r/d = 0.02
 keyKt = 2.14;
@@ -55,5 +83,9 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
     85 150 28 2.0 99 136 83.2 53.0 90.4 63.0;
     90 160 30 2.0 104 146 95.6 62.0 106 73.5;
     95 170 32 2.0 110 156 108 69.5 121 85.0]';
+
+% Safety factor calculation using ASME-Elliptic criterion
+n = 16/(pi*d^3)*(4*(Kf*Ma/Se)^2+3*(Kfs*Tm/Sy)^2)^(1/2);
+safetyFactor = 1/n;
 
 end

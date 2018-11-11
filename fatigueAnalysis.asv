@@ -1,9 +1,29 @@
 function safetyFactor = fatigueAnalysis(r,d,D)
 % Assume that the critical point in the shaft has been determined.
-% r = fillet radius, d = smaller diameter, D = larger diameter
+% r = fillet radius, d = smaller diameter, D = larger diameter (all in mm)
 safetyFactor = 0;
 
+% 1020 Cold Drawn Carbon Steel
+% https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
+Sut = 460e6; %Pa (67e3 psi)
+Se_prime = 250e6; %Pa (36e3 psi)
+
+% Marin Factors
+ka = (4.51)*Sut^(-0.265); %Surface factor for cold drawn Steel
+if (d >= 2.79 && d <= 51) %Size factor
+    kb = (1.24)*d^(-0/107);
+elseif (d > 51 && d <= 254)
+    kb = (1.51)*d^(-0.157);
+end
+kc = 1; %Loading factor for bending
+kd = 1; %Temperature factor
+ke = 1; %Reliability factor, assume perfect reliability
+kf = 1; %Miscellaneous effects factor
+
+Se = ka*kb*kc*kd
+
 % Stress concentration factors for the shoulder in question.
+% www.amesweb.info/StressConcentrationFactor/SteppedShaftWithShoulderFillet.aspx
 h = (D-d)/r;
 
 if (h >= 0.1 && h <= 2)
@@ -18,12 +38,14 @@ elseif (h >= 2)
     C4 = -3.839+3.070*sqrt(h)-0.6*h;
 end
 
+% 0.25 <= (D-d)/r <= 4
 C5 = 0.905+0.783*sqrt(h)-0.075*h;
 C6 = -0.437-1.969*sqrt(h)+0.553*h;
 C7 = 1.557+1.073*sqrt(h)-0.578*h;
 C8 = -1.061+0.171*sqrt(h)+0.086*h;
 
-Kt = C1+C2*(2*(D-d)/D)+C3*(2*(D-d)/D)^2+C4*(2*(D-d)/D)^3
+Kt = C1+C2*(2*(D-d)/D)+C3*(2*(D-d)/D)^2+C4*(2*(D-d)/D)^3;
+Kts = C5+C6*(2*(D-d)/D)+C7*(2*(D-d)/D)^2+C8*(2*(D-d)/D)^3;
 
 % End-mill keyseat Kt and Kts for r/d = 0.02
 keyKt = 2.14;
