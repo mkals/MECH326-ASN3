@@ -1,6 +1,6 @@
 % Main script
 
-% Table 11-2 Transverse (col1 = Bore Diameter, col3 = Bearing Width, col4 =
+% Table 11-2 Transverse (row1 = Bore Diameter, row3 = Bearing Width, row4 =
 % Fillet Radius).  Note we are supposed to have a fillet radius <= 1mm for
 % the gears.
 table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
@@ -22,29 +22,10 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
     80 140 26 2.0 93 127 70.2 45.0 80.6 55.0;
     85 150 28 2.0 99 136 83.2 53.0 90.4 63.0;
     90 160 30 2.0 104 146 95.6 62.0 106 73.5;
-    95 170 32 2.0 110 156 108 69.5 121 85.0];
+    95 170 32 2.0 110 156 108 69.5 121 85.0]';
 
 % Critical location is at left shoulder for the worm gear (high moment,
-% torque and axial loading present, large change in radii).
-Ma = 290; % Nm
-Tm = 540; % Nm
-
-for i=1:length(table_112(:,1))
-    d = table_112(i,1);
-    D = 1.2*d;
-    r = table_112(i,4);
-    if r>1
-        r=1;
-    end
-    n = fatigueAnalysis(r,d,D,Ma,Tm);
-    if n >= 3
-        d
-        D
-        r
-        n
-        break
-    end
-end
+% torque and axial loading present, large change in radii)
 
 leftPoint = -10e-3;
 rightPoint = 550e-3;
