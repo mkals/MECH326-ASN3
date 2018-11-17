@@ -24,33 +24,117 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
     90 160 30 2.0 104 146 95.6 62.0 106 73.5;
     95 170 32 2.0 110 156 108 69.5 121 85.0];
 
-% Critical location is at left shoulder for the worm gear (high moment,
-% torque and axial loading present, large change in radii).
-Ma = 290; % Nm
-Tm = 540; % Nm
-
-for i=1:length(table_112(:,1))
-    d = table_112(i,1);
-    D = 1.2*d;
-    r = table_112(i,4);
-    if r>1
-        r=1;
-    end
-    n = fatigueAnalysis(r,d,D,Ma,Tm);
-    if n >= 3
-        d
-        D
-        r
-        n
-        break
-    end
-end
-
-leftPoint = -10e-3;
-rightPoint = 550e-3;
+% leftPoint = -10e-3;
+% rightPoint = 550e-3;
+leftPoint = 0;
+rightPoint = 525e-3;
 
 N = 1000;
 
 x = linspace(leftPoint, rightPoint, N);
-d = ones(N,1);
+d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0;
 
+% Forces along shaft
+F = [1.59e3*ones(1,190) -1.28e3*ones(1,667) 3.86e3*ones(1,143)];
+
+% Moment along shaft
+for i=1:N
+   M(i) = mean(F(1:i))*x(i); 
+end
+
+F(end) = 0;
+
+% Torque along shaft
+T = [zeros(1,190) 540*ones(1,810)];
+T(end) = 0;
+
+% Axial Force along shaft
+F_axial = [zeros(1,856) 22.4e3*ones(1,144)];
+F_axial(end) = 0;
+
+figure(1)
+subplot(2,2,1)
+plot(x,F)
+xlabel('Position (m)')
+ylabel('Shear Force (N)')
+subplot(2,2,2)
+plot(x,M)
+xlabel('Position (m)')
+ylabel('Moment (Nm)')
+subplot(2,2,3)
+plot(x,T)
+xlabel('Position (m)')
+ylabel('Torque (Nm)')
+subplot(2,2,4)
+plot(x,F_axial)
+xlabel('Position (m)')
+ylabel('Axial Force (N)')
+
+% Critical location is at left shoulder for the worm gear (high moment,
+% torque and axial loading present, large change in radii).
+Ma = M(ceil(475/525*N)); % Nm
+Tm = 540; % Nm
+
+for i=1:length(table_112(:,1))
+    d = table_112(i,1);
+    D = 1.3*d;
+    r = table_112(i,4);
+    if r>1
+        r=1;
+    end
+    n4 = fatigueAnalysis(r,d,D,Ma,Tm);
+    if n4 >= 3
+        d5 = d;
+        [c, index] = min(abs(table_112(:,1)-D));
+        d4 = table_112(index,1);
+        break
+    end
+end
+
+% Next check interface for right bearing and its shoulder.
+Ma = M(ceil(450/525*N)); % Nm
+Tm = 540; % Nm
+
+[c, index] = min(abs(table_112(:,1)-d4/1.2));
+d3 = table_112(index,1);
+r = table_112(index,4);
+if r>1
+    r=1;
+end
+n3 = fatigueAnalysis(r,d3,d4,Ma,Tm);
+
+% Next check interface for right bearing shoulder and longer part of the 
+% shaft.
+Ma = M(ceil(450/525*N)); % Nm
+Tm = 540; % Nm
+
+[c, index] = min(abs(table_112(:,1)-d3/1.2));
+d2 = table_112(index,1);
+r = table_112(index,4);
+if r>1
+    r=1;
+end
+n2 = fatigueAnalysis(r,d3,d4,Ma,Tm);
+
+% Next check interface for left bearing shoulder.
+Ma = M(ceil(100/525*N)); % Nm
+Tm = 0; % Nm
+
+[c, index] = min(abs(table_112(:,1)-d2/1.2));
+d1 = table_112(index,1);
+r = table_112(index,4);
+if r>1
+    r=1;
+end
+n1 = fatigueAnalysis(r,d3,d4,Ma,Tm);
+
+% Shaft contour
+contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,95)];
+
+% TODO: make a 3D plot of the shaft.  Not sure how to do this.
+
+figure(2)
+plot(x,contour)
+axis([0 550e-3 30 70])
+xlabel('Position (mm)')
+ylabel('Shaft Diameter (mm)')
