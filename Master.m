@@ -1,6 +1,9 @@
 % Main script
+clear;
 g = 9.81;
-shaftSpeed = 300*2*pi/60; %rad/s
+shaftSpeed = 300*2*pi/60; % rad/s
+
+inToMm = 25.4; % converting inches to mm
 
 % Table 11-2 Transverse (col1 = Bore Diameter, col3 = Bearing Width, col4 =
 % Fillet Radius).  Note we are supposed to have a fillet radius <= 1mm for
@@ -27,64 +30,84 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
     95 170 32 2.0 110 156 108 69.5 121 85.0];
 
 % length range (m)
-leftPoint = 0;
-rightPoint = 575e-3;
+leftPoint = -20e-3;  % m
+rightPoint = 575e-3; % m
 
 N = 1000; % num points
 
-% 1020 Cold Drawn Carbon Steel
+% Choose 1020 Cold Drawn Carbon Steel
 % https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
-E = 190e9; % Young's modulus
-rho = 7.9e3; %kg/m^3
+E = 190e9;      % Young's modulus
+rho = 7.9e3;    % kg/m^3
 
+%% Define x-dimension and location of shoulders, forces and components
 x = linspace(leftPoint, rightPoint, N);
 dx = (rightPoint-leftPoint)/(N-1);
 
-% Initial guess based on previous runs
-d1 = 45; d2 = 55; d3 = 65; d4 = 80; d5 = 60;
+xBearing  = [0.000 0.450];             % bearing locations
+xGear     = [0.100 0.525];             % gear locations
+xShoulder = [0.150 0.440 0.460 0.475]; % shoulder locations
+xForce    = [0.000 0.100 0.450 0.525]; % force locations
 
-iX = @(x) int16(x/dx)+1;
-xShoulder = [0.000 0.150 0.440 0.460 0.485 0.575];
-iShoulder = iX(xShoulder);
+% Compute index in x-vector
+iX = @(x) int16((x-leftPoint)/dx)+1;
+iBearing   = iX(xBearing);
+iGear      = iX(xGear);
+iShoulder  = iX(xShoulder);
+iForce     = iX(xForce);
+
+% Initial guess of segment dimaters based on previous runs
+dnVec = [35 45 55 65 50];
 
 % Make diameter vector
 dVec = zeros(1,N);
-dVec(iShoulder(1):iShoulder(2)) = d1;
-dVec(iShoulder(2):iShoulder(3)) = d2;
-dVec(iShoulder(3):iShoulder(4)) = d3;
-dVec(iShoulder(4):iShoulder(5)) = d4;
-dVec(iShoulder(5):iShoulder(6)) = d5;
+dVec(1:iShoulder(1)) = dnVec(1); 
+dVec(iShoulder(1):iShoulder(2)) = dnVec(2);
+dVec(iShoulder(2):iShoulder(3)) = dnVec(3);
+dVec(iShoulder(3):iShoulder(4)) = dnVec(4);
+dVec(iShoulder(4):N) = dnVec(5);
 
 % Forces along shaft (N)
-F = [1.59e3*ones(1,190) -1.28e3*ones(1,667) 3.86e3*ones(1,143)];
+% Includes forces on gears and weight of gears
+V = zeros(1,N);
+V(iForce(1):iForce(2)) = 1.59e3;  % N
+V(iForce(2):iForce(3)) = -1.28e3; % N
+V(iForce(3):iForce(4)) = 3.86e3;  % N
 
-% weight vector
-W = pi/4*(dVec*1e-3).^2*rho * g; %weight of shaft
-W(iX(0.100)) = W(iX(0.100)) + 48.2*g; % add weight of spur gear
-W(iX(0.525)) = W(iX(0.525)) + 5.9*g;  % add weight of worm gear
-% figure(6) % plot weights
-% plot(x,W)
+% Consider weight of shaft
+W = pi/4*(dVec*1e-3).^2 *dx*rho*g; % weight of shaft
+shaftWeight = sum(W);
+shaftCentroid = sum(W.*x)/shaftWeight;
 
-F = F - W; % Add weights to force, acting in the -y direction
+% Weight reactions from bearings
+Wr = 0*x;
+Wr(iBearing(1)) = (shaftCentroid-xBearing(1))/(xBearing(2)-xBearing(1))*shaftWeight;
+Wr(iBearing(2)) = (xBearing(2)-shaftCentroid)/(xBearing(2)-xBearing(1))*shaftWeight;
+
+% compute sheer due to weight associated reactions
+Vw = 0*x;
+for index = 1:N
+   Vw(index) = sum(Wr(1:index)-W(1:index)); 
+end
+V = V + Vw; % Add sheer form weights to other sheer
+V(end) = 0;
 
 % Moment along shaft (Nm)
 for i=1:N
-   M(i) = mean(F(1:i))*x(i); 
+   M(i) = mean(V(1:i))*x(i); 
 end
 
-F(end) = 0;
-
 % Torque along shaft
-T = [zeros(1,190) 540*ones(1,810)];
-T(end) = 0;
+T = zeros(1,N);
+T(iGear(1):iGear(2)) = 540; % Nm
 
 % Axial Force along shaft
-F_axial = [zeros(1,856) 22.4e3*ones(1,144)];
-F_axial(end) = 0;
+F_axial = zeros(1,N);
+F_axial(iShoulder(3):iShoulder(4)) = 22.4e3; % N
 
 figure(1)
 subplot(2,2,1)
-plot(x,F)
+plot(x,V)
 xlabel('Position (m)')
 ylabel('Shear Force (N)')
 subplot(2,2,2)
@@ -102,16 +125,13 @@ ylabel('Axial Force (N)')
 
 % Critical location is at left shoulder for the worm gear (high moment,
 % torque and axial loading present, large change in radii).
-Ma = M(ceil(475/525*N)); % Nm
-Tm = 540; % Nm
+Ma = M(iShoulder(4)); % Nm
+Tm = T(iShoulder(4));     % Nm
 
 for i=1:length(table_112(:,1))
     d = table_112(i,1);
     D = 1.3*d;
-    r = table_112(i,4);
-    if r>1
-        r=1;
-    end
+    r = min([table_112(i,4) 1]); % set radi to reccomended radii but cap at 1mm
     n4 = fatigueAnalysis(r,d,D,Ma,Tm);
     if n4 >= 3
         d5 = d;
@@ -122,61 +142,48 @@ for i=1:length(table_112(:,1))
 end
 
 % Next check interface for right bearing and its shoulder.
-Ma = M(ceil(450/525*N)); % Nm
-Tm = 540; % Nm
+Ma = M(iShoulder(3)); % Nm
+Tm = T(iShoulder(3)); % Nm
 
 [~, index] = min(abs(table_112(:,1)-d4/1.2));
 d3 = table_112(index,1);
-r = table_112(index,4);
-if r>1
-    r=1;
-end
+r = min([table_112(index,4) 1]);
 n3 = fatigueAnalysis(r,d3,d4,Ma,Tm);
 
 % Next check interface for right bearing shoulder and longer part of the 
 % shaft.
-Ma = M(ceil(450/525*N)); % Nm
-Tm = 540; % Nm
+Ma = M(iShoulder(2)); % Nm
+Tm = T(iShoulder(2)); % Nm
 
 [~, index] = min(abs(table_112(:,1)-d3/1.2));
 d2 = table_112(index,1);
-r = table_112(index,4);
-if r>1
-    r=1;
-end
+r  = min([table_112(index,4) 1]);
 n2 = fatigueAnalysis(r,d3,d4,Ma,Tm);
 
 % Next check interface for left bearing shoulder.
-Ma = M(ceil(100/525*N)); % Nm
-Tm = 0; % Nm
+Ma = M(iShoulder(1)); % Nm
+Tm = T(iShoulder(1)); % Nm
 
 [c, index] = min(abs(table_112(:,1)-d2/1.2));
 d1 = table_112(index,1);
-r = table_112(index,4);
-if r>1
-    r=1;
-end
+r  = min([table_112(index,4) 1]);
 n1 = fatigueAnalysis(r,d3,d4,Ma,Tm);
 
-% Shaft contour
-contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,95)];
+% Shaft diameters
+assert(dnVec(1)==d1, 'd1 guess wrong')
+assert(dnVec(2)==d2, 'd2 guess wrong')
+assert(dnVec(3)==d3, 'd3 guess wrong')
+assert(dnVec(4)==d4, 'd4 guess wrong')
+assert(dnVec(5)==d5, 'd5 guess wrong')
 
 % Compute deflection and check values
-xBearings = [0.000 0.450]; % bearing locations
-xGears    = [0.100 0.525]; % gear locations
-
-xBearingsIndex = int16(xBearings/dx)+1;
-xGearsIndex = int16(xGears/dx)+1;
-
-[y, yx] = findDeflection(x, contour, xBearings, M, E);
-
-inToMm = 25.4; % converting inches to mm
+[y, yx] = findDeflection(x, dVec, xBearing, M, E);
 
 figure(4)
 plot(x,y*1e3);
 title('Deflection')
 xlabel('Position (m)'); ylabel('Deflection (mm)');
-fprintf('Deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n', y(xGearsIndex(1))*1e3, y(xGearsIndex(1))*1e3)
+fprintf('Deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n', y(iGear(1))*1e3, y(iGear(1))*1e3)
 % Both gears have > 3 teeth/inch
 fprintf('Max deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n\n', 0.01*inToMm, 0.01*inToMm)
 
@@ -185,24 +192,23 @@ plot(x,yx)
 title('Slope')
 xlabel('Position (m)'); ylabel('Slope (rad)');
 [yxmax, imax] = max(yx);
-fprintf('Slope at bearing A is %.1e rad and at B it is %.1e rad.\n', yx(xBearingsIndex(1)), yx(xBearingsIndex(2)))
+fprintf('Slope at bearing A is %.1e rad and at B it is %.1e rad.\n', yx(iBearing(1)), yx(iBearing(2)))
 % Assume deep-groove ball bearing at A and tapered roller bearing at B.
 fprintf('Max slope at bearing A is %.1e rad and at B it is %.1e rad.\n\n', 0.001, 0.0005)
 
-% Check deflection
+% Check critical speed
 maxSpeed = findCriticalSpeed(x, y, W); %rad/s
-assert(shaftSpeed < maxSpeed);
+assert(shaftSpeed < maxSpeed, 'Shaft critical speed too low');
 
 % Plot final shaft design
 figure(2)
 hold on
-plot(x,contour/2, 'b')
-plot(x,-contour/2, 'b')
-plot(x(1)*[1 1], [1 -1]*contour(1)/2, 'b')
-plot(x(end)*[1 1], [1 -1]*contour(end)/2, 'b')
+plot(x,dVec/2, 'b')
+plot(x,-dVec/2, 'b')
+plot(x(1)*[1 1], [1 -1]*dVec(1)/2, 'b')
+plot(x(end)*[1 1], [1 -1]*dVec(end)/2, 'b')
 hold off
 %axis([0 550e-3 30 70])
 xlabel('Position (m)'); ylabel('Shaft Outline (mm)');
 
 %close all
-
