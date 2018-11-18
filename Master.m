@@ -1,5 +1,7 @@
 % Main script
 
+shaftSpeed = 300*2*pi/60; %rad/s
+
 % Table 11-2 Transverse (col1 = Bore Diameter, col3 = Bearing Width, col4 =
 % Fillet Radius).  Note we are supposed to have a fillet radius <= 1mm for
 % the gears.
@@ -27,16 +29,15 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
 % leftPoint = -10e-3;
 % rightPoint = 550e-3;
 
-% in meters
+% length range (m)
 leftPoint = 0;
-rightPoint = 525e-3;
+rightPoint = 575e-3;
 
-N = 1000;
+N = 1000; % num points
 
 % 1020 Cold Drawn Carbon Steel
 % https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
 E = 190e9; % Young's modulus
-
 
 x = linspace(leftPoint, rightPoint, N);
 d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0;
@@ -102,7 +103,7 @@ end
 Ma = M(ceil(450/525*N)); % Nm
 Tm = 540; % Nm
 
-[c, index] = min(abs(table_112(:,1)-d4/1.2));
+[~, index] = min(abs(table_112(:,1)-d4/1.2));
 d3 = table_112(index,1);
 r = table_112(index,4);
 if r>1
@@ -115,7 +116,7 @@ n3 = fatigueAnalysis(r,d3,d4,Ma,Tm);
 Ma = M(ceil(450/525*N)); % Nm
 Tm = 540; % Nm
 
-[c, index] = min(abs(table_112(:,1)-d3/1.2));
+[~, index] = min(abs(table_112(:,1)-d3/1.2));
 d2 = table_112(index,1);
 r = table_112(index,4);
 if r>1
@@ -142,8 +143,8 @@ contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,9
 y = findDeflection(x, contour, [0, 0.450], M, E);
 figure(3)
 plot(x,y);
-omega = findCriticalSpeed(x, y, m);
-%check crit speed
+maxSpeed = findCriticalSpeed(x, y, m); %rad/s
+assert(shaftSpeed < maxSpeed);
 
 % TODO: make a 3D plot of the shaft.  Not sure how to do this.
 
