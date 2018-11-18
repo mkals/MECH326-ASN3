@@ -26,6 +26,8 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
 
 % leftPoint = -10e-3;
 % rightPoint = 550e-3;
+
+% in meters
 leftPoint = 0;
 rightPoint = 525e-3;
 
@@ -39,10 +41,10 @@ E = 190e9; % Young's modulus
 x = linspace(leftPoint, rightPoint, N);
 d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0;
 
-% Forces along shaft
+% Forces along shaft (N)
 F = [1.59e3*ones(1,190) -1.28e3*ones(1,667) 3.86e3*ones(1,143)];
 
-% Moment along shaft
+% Moment along shaft (Nm)
 for i=1:N
    M(i) = mean(F(1:i))*x(i); 
 end
@@ -140,6 +142,8 @@ contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,9
 y = findDeflection(x, contour, [0, 0.450], M, E);
 figure(3)
 plot(x,y);
+omega = findCriticalSpeed(x, y, m);
+%check crit speed
 
 % TODO: make a 3D plot of the shaft.  Not sure how to do this.
 
