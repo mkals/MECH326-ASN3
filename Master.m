@@ -1,7 +1,6 @@
 % Main script
 g = 9.81;
 shaftSpeed = 300*2*pi/60; %rad/s
-diameters = [40,50,60,70,55];
 
 % Table 11-2 Transverse (col1 = Bore Diameter, col3 = Bearing Width, col4 =
 % Fillet Radius).  Note we are supposed to have a fillet radius <= 1mm for
@@ -36,21 +35,37 @@ N = 1000; % num points
 % 1020 Cold Drawn Carbon Steel
 % https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
 E = 190e9; % Young's modulus
+rho = 7.9e3; %kg/m^3
 
 x = linspace(leftPoint, rightPoint, N);
-dx = (rightPoint-leftPoint)/N;
+dx = (rightPoint-leftPoint)/(N-1);
 
-d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0;
+% Initial guess based on previous runs
+d1 = 45; d2 = 55; d3 = 65; d4 = 80; d5 = 60;
+
+iX = @(x) int16(x/dx)+1;
+xShoulder = [0.000 0.150 0.440 0.460 0.485 0.575];
+iShoulder = iX(xShoulder);
+
+% Make diameter vector
+dVec = zeros(1,N);
+dVec(iShoulder(1):iShoulder(2)) = d1;
+dVec(iShoulder(2):iShoulder(3)) = d2;
+dVec(iShoulder(3):iShoulder(4)) = d3;
+dVec(iShoulder(4):iShoulder(5)) = d4;
+dVec(iShoulder(5):iShoulder(6)) = d5;
 
 % Forces along shaft (N)
-
 F = [1.59e3*ones(1,190) -1.28e3*ones(1,667) 3.86e3*ones(1,143)];
 
 % weight vector
-W = zeros(N,1);
-W(int16(0.1/dx)) = 48.2*g;
-W(int16(0.525/dx)) = 5.9*g;
+W = pi/4*(dVec*1e-3).^2*rho * g; %weight of shaft
+W(iX(0.100)) = W(iX(0.100)) + 48.2*g; % add weight of spur gear
+W(iX(0.525)) = W(iX(0.525)) + 5.9*g;  % add weight of worm gear
+% figure(6) % plot weights
+% plot(x,W)
 
+F = F - W; % Add weights to force, acting in the -y direction
 
 % Moment along shaft (Nm)
 for i=1:N
@@ -146,38 +161,39 @@ n1 = fatigueAnalysis(r,d3,d4,Ma,Tm);
 % Shaft contour
 contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,95)];
 
-% Check deflection and critical speed
-xBearing = [0.000 0.450];       % bearing locations
-xGears   = [0.100 0.450+0.075]; % gear locations
+% Compute deflection and check values
+xBearings = [0.000 0.450]; % bearing locations
+xGears    = [0.100 0.525]; % gear locations
 
-[y, yx] = findDeflection(x, contour, xBearing, M, E);
-figure(3)
+xBearingsIndex = int16(xBearings/dx)+1;
+xGearsIndex = int16(xGears/dx)+1;
 
-plot(x,y);
-maxSpeed = findCriticalSpeed(x, y, W); %rad/s
-assert(shaftSpeed < maxSpeed);
+[y, yx] = findDeflection(x, contour, xBearings, M, E);
 
-
-plot(x,y*1e3);
-title('Defection')
-xlabel('Position (m)'); ylabel('Deflection (mm)');
-[ymax, imax] = max(y);
-fprintf('Max deflection: y = %.2e mm at x = %.0f mm \n', ymax*1e3, x(imax)*1e3)
+inToMm = 25.4; % converting inches to mm
 
 figure(4)
+plot(x,y*1e3);
+title('Deflection')
+xlabel('Position (m)'); ylabel('Deflection (mm)');
+fprintf('Deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n', y(xGearsIndex(1))*1e3, y(xGearsIndex(1))*1e3)
+% Both gears have > 3 teeth/inch
+fprintf('Max deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n\n', 0.01*inToMm, 0.01*inToMm)
+
+figure(5)
 plot(x,yx)
 title('Slope')
 xlabel('Position (m)'); ylabel('Slope (rad)');
 [yxmax, imax] = max(yx);
-fprintf('Max slope: dy/dx = %.2e rad at x = %.0f mm \n', yxmax, x(imax)*1e3)
+fprintf('Slope at bearing A is %.1e rad and at B it is %.1e rad.\n', yx(xBearingsIndex(1)), yx(xBearingsIndex(2)))
+% Assume deep-groove ball bearing at A and tapered roller bearing at B.
+fprintf('Max slope at bearing A is %.1e rad and at B it is %.1e rad.\n\n', 0.001, 0.0005)
 
-%% We need to check the following:
-% Deflection at gears: 
-% Slope at gears: 
-% assume crowned spur gear
+% Check deflection
+maxSpeed = findCriticalSpeed(x, y, W); %rad/s
+assert(shaftSpeed < maxSpeed);
 
-% TODO: make a 3D plot of the shaft.  Not sure how to do this.
-
+% Plot final shaft design
 figure(2)
 hold on
 plot(x,contour/2, 'b')
@@ -187,3 +203,6 @@ plot(x(end)*[1 1], [1 -1]*contour(end)/2, 'b')
 hold off
 %axis([0 550e-3 30 70])
 xlabel('Position (m)'); ylabel('Shaft Outline (mm)');
+
+%close all
+
