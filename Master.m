@@ -1,6 +1,7 @@
 % Main script
 g = 9.81;
 shaftSpeed = 300*2*pi/60; %rad/s
+diameters = [40,50,60,70,55];
 
 % Table 11-2 Transverse (col1 = Bore Diameter, col3 = Bearing Width, col4 =
 % Fillet Radius).  Note we are supposed to have a fillet radius <= 1mm for
@@ -26,16 +27,11 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
     90 160 30 2.0 104 146 95.6 62.0 106 73.5;
     95 170 32 2.0 110 156 108 69.5 121 85.0];
 
-% leftPoint = -10e-3;
-% rightPoint = 550e-3;
-
 % length range (m)
 leftPoint = 0;
 rightPoint = 575e-3;
 
-
 N = 1000; % num points
-
 
 % 1020 Cold Drawn Carbon Steel
 % https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
@@ -47,7 +43,9 @@ dx = (rightPoint-leftPoint)/N;
 d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0;
 
 % Forces along shaft (N)
+
 F = [1.59e3*ones(1,190) -1.28e3*ones(1,667) 3.86e3*ones(1,143)];
+
 % weight vector
 W = zeros(N,1);
 W(int16(0.1/dx)) = 48.2*g;
@@ -102,7 +100,7 @@ for i=1:length(table_112(:,1))
     n4 = fatigueAnalysis(r,d,D,Ma,Tm);
     if n4 >= 3
         d5 = d;
-        [c, index] = min(abs(table_112(:,1)-D));
+        [~, index] = min(abs(table_112(:,1)-D));
         d4 = table_112(index,1);
         break
     end
