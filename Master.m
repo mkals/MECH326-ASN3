@@ -140,11 +140,37 @@ n1 = fatigueAnalysis(r,d3,d4,Ma,Tm);
 contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,95)];
 
 % Check deflection and critical speed
-y = findDeflection(x, contour, [0, 0.450], M, E);
+xBearing = [0.000 0.450];       % bearing locations
+xGears   = [0.100 0.450+0.075]; % gear locations
+
+[y, yx] = findDeflection(x, contour, xBearing, M, E);
 figure(3)
+<<<<<<< Updated upstream
 plot(x,y);
 maxSpeed = findCriticalSpeed(x, y, m); %rad/s
 assert(shaftSpeed < maxSpeed);
+omega = findCriticalSpeed(x, y, m);
+%check crit speed
+=======
+plot(x,y*1e3);
+title('Defection')
+xlabel('Position (m)'); ylabel('Deflection (mm)');
+[ymax, imax] = max(y);
+fprintf('Max deflection: y = %.2e mm at x = %.0f mm \n', ymax*1e3, x(imax)*1e3)
+
+figure(4)
+plot(x,yx)
+title('Slope')
+xlabel('Position (m)'); ylabel('Slope (rad)');
+[yxmax, imax] = max(yx);
+fprintf('Max slope: dy/dx = %.2e rad at x = %.0f mm \n', yxmax, x(imax)*1e3)
+
+%% We need to check the following:
+% Deflection at gears: 
+% Slope at gears: 
+% assume crowned spur gear
+
+>>>>>>> Stashed changes
 
 % TODO: make a 3D plot of the shaft.  Not sure how to do this.
 
@@ -156,5 +182,4 @@ plot(x(1)*[1 1], [1 -1]*contour(1)/2, 'b')
 plot(x(end)*[1 1], [1 -1]*contour(end)/2, 'b')
 hold off
 %axis([0 550e-3 30 70])
-xlabel('Position (m)')
-ylabel('Shaft Outline (mm)')
+xlabel('Position (m)'); ylabel('Shaft Outline (mm)');
