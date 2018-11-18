@@ -1,5 +1,5 @@
 % Main script
-
+g = 9.81;
 shaftSpeed = 300*2*pi/60; %rad/s
 
 % Table 11-2 Transverse (col1 = Bore Diameter, col3 = Bearing Width, col4 =
@@ -33,17 +33,26 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
 leftPoint = 0;
 rightPoint = 575e-3;
 
+
 N = 1000; % num points
+
 
 % 1020 Cold Drawn Carbon Steel
 % https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
 E = 190e9; % Young's modulus
 
 x = linspace(leftPoint, rightPoint, N);
+dx = (rightPoint-leftPoint)/N;
+
 d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0;
 
 % Forces along shaft (N)
 F = [1.59e3*ones(1,190) -1.28e3*ones(1,667) 3.86e3*ones(1,143)];
+% weight vector
+W = zeros(N,1);
+W(int16(0.1/dx)) = 48.2*g;
+W(int16(0.525/dx)) = 5.9*g;
+
 
 % Moment along shaft (Nm)
 for i=1:N
@@ -145,13 +154,12 @@ xGears   = [0.100 0.450+0.075]; % gear locations
 
 [y, yx] = findDeflection(x, contour, xBearing, M, E);
 figure(3)
-<<<<<<< Updated upstream
+
 plot(x,y);
-maxSpeed = findCriticalSpeed(x, y, m); %rad/s
+maxSpeed = findCriticalSpeed(x, y, W); %rad/s
 assert(shaftSpeed < maxSpeed);
-omega = findCriticalSpeed(x, y, m);
-%check crit speed
-=======
+
+
 plot(x,y*1e3);
 title('Defection')
 xlabel('Position (m)'); ylabel('Deflection (mm)');
@@ -169,8 +177,6 @@ fprintf('Max slope: dy/dx = %.2e rad at x = %.0f mm \n', yxmax, x(imax)*1e3)
 % Deflection at gears: 
 % Slope at gears: 
 % assume crowned spur gear
-
->>>>>>> Stashed changes
 
 % TODO: make a 3D plot of the shaft.  Not sure how to do this.
 
