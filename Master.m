@@ -134,7 +134,12 @@ contour = [d1*ones(1,190) d2*ones(1,619) d3*ones(1,48) d4*ones(1,48) d5*ones(1,9
 % TODO: make a 3D plot of the shaft.  Not sure how to do this.
 
 figure(2)
-plot(x,contour)
-axis([0 550e-3 30 70])
-xlabel('Position (mm)')
-ylabel('Shaft Diameter (mm)')
+hold on
+plot(x,contour/2, 'b')
+plot(x,-contour/2, 'b')
+plot(x(1)*[1 1], [1 -1]*contour(1)/2, 'b')
+plot(x(end)*[1 1], [1 -1]*contour(end)/2, 'b')
+hold off
+%axis([0 550e-3 30 70])
+xlabel('Position (m)')
+ylabel('Shaft Outline (mm)')
