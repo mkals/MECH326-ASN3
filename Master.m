@@ -127,14 +127,14 @@ ylabel('Axial Force (N)')
 
 % Critical location is at left shoulder for the worm gear (high moment,
 % torque and axial loading present, large change in radii).
-Ma = M(iShoulder(4)); % Nm
+Ma = abs(M(iShoulder(4))); % Nm
 Tm = T(iShoulder(4));     % Nm
 
 for i=1:length(table_112(:,1))
     d = table_112(i,1);
     D = 1.3*d;
     r = min([table_112(i,4) 1]); % set radi to reccomended radii but cap at 1mm
-    n4 = fatigueAnalysis(r,d,D,Ma,Tm);
+    n4 = fatigueAnalysis_soderberg(r,d,D,Ma,Tm);
     if n4 >= 3
         d5 = d;
         [~, index] = min(abs(table_112(:,1)-D));
@@ -150,7 +150,7 @@ Tm = T(iShoulder(3)); % Nm
 [~, index] = min(abs(table_112(:,1)-d4/1.2));
 d3 = table_112(index,1);
 r = min([table_112(index,4) 1]);
-n3 = fatigueAnalysis(r,d3,d4,Ma,Tm);
+n3 = fatigueAnalysis_soderberg(r,d3,d4,Ma,Tm);
 
 % Next check interface for right bearing shoulder and longer part of the 
 % shaft.
@@ -160,7 +160,7 @@ Tm = T(iShoulder(2)); % Nm
 [~, index] = min(abs(table_112(:,1)-d3/1.2));
 d2 = table_112(index,1);
 r  = min([table_112(index,4) 1]);
-n2 = fatigueAnalysis(r,d3,d4,Ma,Tm);
+n2 = fatigueAnalysis_soderberg(r,d3,d4,Ma,Tm);
 
 % Next check interface for left bearing shoulder.
 Ma = M(iShoulder(1)); % Nm
@@ -169,7 +169,7 @@ Tm = T(iShoulder(1)); % Nm
 [c, index] = min(abs(table_112(:,1)-d2/1.2));
 d1 = table_112(index,1);
 r  = min([table_112(index,4) 1]);
-n1 = fatigueAnalysis(r,d3,d4,Ma,Tm);
+n1 = fatigueAnalysis_soderberg(r,d3,d4,Ma,Tm);
 
 % Shaft diameters
 assert(dnVec(1)==d1, 'd1 guess wrong')
