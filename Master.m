@@ -59,7 +59,7 @@ iShoulder  = iX(xShoulder);
 iForce     = iX(xForce);
 
 % Initial guess of segment diameters based on previous runs
-dnVec = [45 55 65 80 60];
+dnVec = [55 60 65 80 60];
 
 % Make diameter vector
 dVec = zeros(1,N);
@@ -174,11 +174,7 @@ n1 = fatigueAnalysis_soderberg(r,d3,d4,Ma,Tm);
 
 %[d1 d2 d3 d4 d5] % Uncomment to print required diameters
 % Verify shaft diameter guesses
-assert(dnVec(1)==d1, 'd1 guess wrong')
-assert(dnVec(2)==d2, 'd2 guess wrong')
-assert(dnVec(3)==d3, 'd3 guess wrong')
-assert(dnVec(4)==d4, 'd4 guess wrong')
-assert(dnVec(5)==d5, 'd5 guess wrong')
+assert(min(dnVec >= [d1 d2 d3 d4 d5]), 'Diameter too small, faliure.')
 
 % Compute yield safety factor
 sFYield = yieldAnalysis(V, M, T, dVec, S_y, length(V))
