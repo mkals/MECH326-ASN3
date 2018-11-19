@@ -31,16 +31,16 @@ table_112 = [10 30 9 0.6 12.5 27 5.07 2.24 4.94 2.12;
     90 160 30 2.0 104 146 95.6 62.0 106 73.5;
     95 170 32 2.0 110 156 108 69.5 121 85.0];
 
+% Choose 1020 Cold Drawn Carbon Steel
+% https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
+E = 190e9;      % Young's modulus
+rho = 7.9e3;    % kg/m^3
+
 % length range (m)
 leftPoint = -20e-3;  % m
 rightPoint = 575e-3; % m
 
 N = 1000; % num points
-
-% Choose 1020 Cold Drawn Carbon Steel
-% https://www.makeitfrom.com/material-properties/Cold-Drawn-1020-Carbon-Steel/
-E = 190e9;      % Young's modulus
-rho = 7.9e3;    % kg/m^3
 
 %% Define x-dimension and location of shoulders, forces and components
 x = linspace(leftPoint, rightPoint, N);
@@ -77,7 +77,7 @@ V(iForce(2):iForce(3)) = -1.28e3; % N
 V(iForce(3):iForce(4)) = 3.86e3;  % N
 
 % Consider weight of shaft
-W = pi/4*(dVec*1e-3).^2 *dx*rho*g; % weight of shaft
+W = pi/4*(dVec*1e-3).^2 *dx*rho*g; % weight of shaft as vector
 shaftWeight = sum(W);
 shaftCentroid = sum(W.*x)/shaftWeight;
 
@@ -92,7 +92,7 @@ for index = 1:N
    Vw(index) = sum(Wr(1:index)-W(1:index)); 
 end
 V = V + Vw; % Add sheer form weights to other sheer
-V(end) = 0;
+V(end) = 0; % set to zero to fix rounding errors
 
 % Moment along shaft (Nm)
 for i=1:N
@@ -107,6 +107,7 @@ T(iGear(1):iGear(2)) = 540; % Nm
 F_axial = zeros(1,N);
 F_axial(iShoulder(3):iShoulder(4)) = 22.4e3; % N
 
+% Plot diagrams describing shaft loading
 figure(1)
 subplot(2,2,1)
 plot(x,V)
@@ -128,12 +129,12 @@ ylabel('Axial Force (N)')
 % Critical location is at left shoulder for the worm gear (high moment,
 % torque and axial loading present, large change in radii).
 Ma = abs(M(iShoulder(4))); % Nm
-Tm = T(iShoulder(4));     % Nm
+Tm = T(iShoulder(4));      % Nm
 
 for i=1:length(table_112(:,1))
     d = table_112(i,1);
     D = 1.3*d;
-    r = min([table_112(i,4) 1]); % set radi to reccomended radii but cap at 1mm
+    r = min([table_112(i,4) 1]); % mm, set radi to reccomended radii but cap at 1mm
     n4 = fatigueAnalysis_soderberg(r,d,D,Ma,Tm);
     if n4 >= 3
         d5 = d;
