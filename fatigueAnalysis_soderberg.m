@@ -1,4 +1,4 @@
-function safetyFactor = fatigueAnalysis(r,d,D,Ma,Tm)
+function safetyFactor = fatigueAnalysis_soderberg(r,d,D,Ma,Tm)
 % Assume that the critical point in the shaft has been determined.
 % r = fillet radius, d = smaller diameter, D = larger diameter (all in mm)
 % Ma = alternating moment, Tm = midrange torque
