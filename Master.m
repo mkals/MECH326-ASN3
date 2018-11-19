@@ -179,7 +179,7 @@ assert(dnVec(4)==d4, 'd4 guess wrong')
 assert(dnVec(5)==d5, 'd5 guess wrong')
 
 % Compute yield safety factor
-sFYield = yieldAnalysis(V, M, T, dVec, S_ut, length(V))
+sFYield = yieldAnalysis(V, M, T, dVec, S_y, length(V))
 
 % Compute deflection and check values
 [y, yx] = findDeflection(x, dVec, xBearing, M, E);
