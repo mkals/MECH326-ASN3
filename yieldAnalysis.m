@@ -8,6 +8,7 @@
 % length - Number of slices taken
 function safetyFactor = yieldAnalysis(VList, MList, TList, dList, S_ut, length)
     safetyFactor = 0;
+    rList = (dList./2).*1e-3;
     tau_shear = zeros(1, length);
     sigma = zeros(1, length);
     tau_torsion = zeros(1, length);
@@ -17,13 +18,13 @@ function safetyFactor = yieldAnalysis(VList, MList, TList, dList, S_ut, length)
     
     %% Find max shear stress: tau_shear = F/A
     for i = 1:length
-        A(i) = pi*((dList(i)*1e-3)/2)^2;
+        A(i) = pi*(rList(i))^2;
         tau_shear(i) = VList(i) / A(i);
     end
     
     %% Find max bending stress: sigma = (M*y)/I
     for i = 1:length
-        I(i) = (pi/64)*(dList(i)*1e-3)^4;
+        I(i) = (pi/64)*(2*rList(i))^4;
         sigma(i) = MList(i)*(dList(i)/2) / I(i);
     end
     
