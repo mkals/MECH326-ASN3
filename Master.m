@@ -58,8 +58,8 @@ iGear      = iX(xGear);
 iShoulder  = iX(xShoulder);
 iForce     = iX(xForce);
 
-% Initial guess of segment dimaters based on previous runs
-dnVec = [35 45 55 65 50];
+% Initial guess of segment diameters based on previous runs
+dnVec = [45 55 65 80 60];
 
 % Make diameter vector
 dVec = zeros(1,N);
@@ -171,7 +171,8 @@ d1 = table_112(index,1);
 r  = min([table_112(index,4) 1]);
 n1 = fatigueAnalysis_soderberg(r,d3,d4,Ma,Tm);
 
-% Shaft diameters
+%[d1 d2 d3 d4 d5] % Uncomment to print required diameters
+% Verify shaft diameter guesses
 assert(dnVec(1)==d1, 'd1 guess wrong')
 assert(dnVec(2)==d2, 'd2 guess wrong')
 assert(dnVec(3)==d3, 'd3 guess wrong')
@@ -188,7 +189,7 @@ figure(4)
 plot(x,y*1e3);
 title('Deflection')
 xlabel('Position (m)'); ylabel('Deflection (mm)');
-fprintf('Deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n', y(iGear(1))*1e3, y(iGear(1))*1e3)
+fprintf('Deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n', y(iGear(1))*1e3, y(iGear(2))*1e3)
 % Both gears have > 3 teeth/inch
 fprintf('Max deflection at spur gear is %.1e mm and at worm it is %.1e mm.\n\n', 0.01*inToMm, 0.01*inToMm)
 
