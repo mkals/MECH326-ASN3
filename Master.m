@@ -2,6 +2,7 @@
 clear;
 g = 9.81;
 shaftSpeed = 300*2*pi/60; % rad/s
+S_ut = 460e6; % Pa
 
 inToMm = 25.4; % converting inches to mm
 
@@ -175,6 +176,9 @@ assert(dnVec(2)==d2, 'd2 guess wrong')
 assert(dnVec(3)==d3, 'd3 guess wrong')
 assert(dnVec(4)==d4, 'd4 guess wrong')
 assert(dnVec(5)==d5, 'd5 guess wrong')
+
+% Compute yield safety factor
+sFYield = yieldAnalysis(V, M, T, dVec, S_ut, length(V))
 
 % Compute deflection and check values
 [y, yx] = findDeflection(x, dVec, xBearing, M, E);
