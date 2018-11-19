@@ -3,6 +3,7 @@ clear;
 g = 9.81;
 shaftSpeed = 300*2*pi/60; % rad/s
 S_ut = 460e6; % Pa
+S_y = 380e6; % Pa
 
 inToMm = 25.4; % converting inches to mm
 
